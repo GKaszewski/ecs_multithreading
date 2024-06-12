@@ -14,7 +14,7 @@ impl Plugin for GameOfLifePlugin {
     fn build(&self, app: &mut App) {
         app.add_state::<SimulationState>()
             .insert_resource(ClearColor(Color::rgb(0.0, 0.0, 0.0)))
-            .insert_resource(Grid { width: 1000, height: 1000 })
+            .insert_resource(Grid { width: 100, height: 100 })
             .insert_resource(CellsChanged(true))
             .insert_resource(CellPositions { map: HashMap::new() })
             .insert_resource(PlacementMode::Single)
