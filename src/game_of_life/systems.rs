@@ -1,11 +1,15 @@
 use bevy::input::mouse::MouseWheel;
 use bevy::prelude::*;
 use bevy::window::PrimaryWindow;
-use std::time::Instant;
 use rand::Rng;
+use std::time::Instant;
 
-use super::components::{ Neighbors, Position, CellBundle };
-use super::resources::{ CellPositions, CellsChanged, Grid, PlacementMode };
+use crate::game_of_life::utils::save_durations_to_file;
+
+use super::components::{CellBundle, Neighbors, Position};
+use super::resources::{
+    CellPositions, CellsChanged, Durations, Grid, PlacementMode, SystemsMeasureTime,
+};
 use super::SimulationState;
 
 use super::components;
@@ -13,7 +17,7 @@ use super::components;
 pub fn rebuild_cell_positions(
     query: Query<(&Position, &components::State)>,
     mut cell_positions: ResMut<CellPositions>,
-    mut cells_changed: ResMut<CellsChanged>
+    mut cells_changed: ResMut<CellsChanged>,
 ) {
     if !cells_changed.0 {
         return;
@@ -36,30 +40,27 @@ pub fn spawn_cells(mut commands: Commands, grid: Res<Grid>, asset_server: Res<As
     let to_spawn = (0..cells_to_spawn_count).map(move |i| {
         let x = i % width;
         let y = i / width;
-        let position = Position { x: x as i32, y: y as i32 };
+        let position = Position {
+            x: x as i32,
+            y: y as i32,
+        };
         let mut rng = rand::thread_rng();
         let state = components::State(rng.gen_bool(0.5));
         let sprite = SpriteBundle {
             sprite: Sprite {
-                color: if state.0 {
-                    Color::GREEN
-                } else {
-                    Color::BLACK
-                },
+                color: if state.0 { Color::GREEN } else { Color::BLACK },
                 ..default()
             },
             texture: texture.clone(),
             transform: Transform::from_translation(Vec3::new(x as f32, y as f32, 0.0)),
             ..default()
         };
-        (
-            CellBundle {
-                position,
-                state,
-                sprite,
-                ..Default::default()
-            },
-        )
+        (CellBundle {
+            position,
+            state,
+            sprite,
+            ..Default::default()
+        },)
     });
 
     commands.spawn_batch(to_spawn);
@@ -77,7 +78,7 @@ pub fn initialize(mut commands: Commands) {
 pub fn update_neighbors_brute_force_system(
     mut query: Query<(&mut Neighbors, &Position)>,
     grid: Res<Grid>,
-    cell_positions: Res<CellPositions>
+    cell_positions: Res<CellPositions>,
 ) {
     query.par_iter_mut().for_each(|(mut neighbors, pos)| {
         let mut count = 0;
@@ -106,7 +107,7 @@ pub fn update_neighbors_brute_force_system(
 
 pub fn update_cells_system(
     mut query: Query<(&mut components::State, &Neighbors, &mut Sprite)>,
-    mut cells_changed: ResMut<CellsChanged>
+    mut cells_changed: ResMut<CellsChanged>,
 ) {
     for (mut state, neighbors, mut sprite) in query.iter_mut() {
         let previous_state = state.0;
@@ -131,7 +132,7 @@ pub fn update_cells_system(
 pub fn handle_camera_system(
     mut query: Query<(&mut OrthographicProjection, &mut Transform, With<Camera>)>,
     keyboard_input: Res<Input<KeyCode>>,
-    mut scroll_event: EventReader<MouseWheel>
+    mut scroll_event: EventReader<MouseWheel>,
 ) {
     const SPEED: f32 = 5.0;
     const ZOOM_SPEED: f32 = 0.1;
@@ -168,7 +169,7 @@ pub fn handle_camera_system(
 
 pub fn handle_placement_mode(
     mut placement_mode: ResMut<PlacementMode>,
-    keyboard_input: Res<Input<KeyCode>>
+    keyboard_input: Res<Input<KeyCode>>,
 ) {
     if keyboard_input.just_pressed(KeyCode::Key1) {
         *placement_mode = PlacementMode::Single;
@@ -185,14 +186,13 @@ pub fn handle_cell_click_system(
     mouse_button_input: Res<Input<MouseButton>>,
     windows_query: Query<&Window, With<PrimaryWindow>>,
     placement_mode: Res<PlacementMode>,
-    mut cells_changed: ResMut<CellsChanged>
+    mut cells_changed: ResMut<CellsChanged>,
 ) {
     let (camera, camera_transform) = camera_query.single();
-    if
-        let Some(position) = windows_query
-            .single()
-            .cursor_position()
-            .and_then(|cursor| camera.viewport_to_world_2d(camera_transform, cursor))
+    if let Some(position) = windows_query
+        .single()
+        .cursor_position()
+        .and_then(|cursor| camera.viewport_to_world_2d(camera_transform, cursor))
     {
         if mouse_button_input.just_pressed(MouseButton::Left) {
             for (pos, mut sprite, mut state) in query.iter_mut() {
@@ -223,7 +223,7 @@ pub fn handle_cell_click_system(
 pub fn toggle_simulation_system(
     mut commands: Commands,
     simulation_state: Res<State<SimulationState>>,
-    keyboard_input: Res<Input<KeyCode>>
+    keyboard_input: Res<Input<KeyCode>>,
 ) {
     if keyboard_input.just_pressed(KeyCode::Space) {
         if *simulation_state == SimulationState::Paused {
@@ -237,7 +237,7 @@ pub fn toggle_simulation_system(
 pub fn do_one_step_system(
     mut commands: Commands,
     simulation_state: Res<State<SimulationState>>,
-    keyboard_input: Res<Input<KeyCode>>
+    keyboard_input: Res<Input<KeyCode>>,
 ) {
     if keyboard_input.just_pressed(KeyCode::Right) {
         if *simulation_state == SimulationState::Paused {
@@ -245,4 +245,19 @@ pub fn do_one_step_system(
             commands.insert_resource(NextState(Some(SimulationState::Paused)));
         }
     }
+}
+
+pub fn start_measurement(mut commands: Commands) {
+    commands.insert_resource(SystemsMeasureTime(Instant::now()));
+}
+
+pub fn stop_measurement(
+    systems_measure_time: Res<SystemsMeasureTime>,
+    mut durations: ResMut<Durations>,
+) {
+    let duration = systems_measure_time.0.elapsed();
+    durations.0.push(duration);
+    println!("System took {:?}", duration);
+
+    save_durations_to_file(&durations);
 }

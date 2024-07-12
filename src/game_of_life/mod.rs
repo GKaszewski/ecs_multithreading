@@ -1,12 +1,14 @@
-use std::collections::HashMap;
+use std::{collections::HashMap, time::Instant};
 
 use bevy::prelude::*;
+use resources::{Durations, SystemsMeasureTime};
 
 use self::resources::{CellPositions, CellsChanged, Grid, PlacementMode};
 
 mod components;
 mod resources;
 mod systems;
+mod utils;
 
 pub struct GameOfLifePlugin;
 
@@ -23,6 +25,8 @@ impl Plugin for GameOfLifePlugin {
                 map: HashMap::new(),
             })
             .insert_resource(PlacementMode::Single)
+            .insert_resource(Durations(Vec::new()))
+            .insert_resource(SystemsMeasureTime(Instant::now()))
             .add_systems(
                 Startup,
                 (
@@ -33,11 +37,13 @@ impl Plugin for GameOfLifePlugin {
             .add_systems(
                 Update,
                 (
+                    systems::start_measurement,
                     systems::rebuild_cell_positions,
                     systems::update_neighbors_brute_force_system,
                     systems::update_cells_system,
                     systems::rebuild_cell_positions,
                     systems::update_neighbors_brute_force_system,
+                    systems::stop_measurement,
                 )
                     .chain()
                     .run_if(in_state(SimulationState::Running)),

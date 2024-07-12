@@ -83,7 +83,7 @@ features = [
 
   # Development/Debug features:
 #   "dynamic_linking",   # Dynamic linking for faster compile-times
-#   "trace",             # Enable tracing for performance measurement
+ #   "trace",             # Enable tracing for performance measurement
 #   "detailed_trace",    # Make traces more verbose
 #   "trace_tracy",       # Tracing using `tracy`
 #   "trace_tracy_memory", # + memory profiling

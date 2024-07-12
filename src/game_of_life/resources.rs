@@ -1,5 +1,8 @@
 use bevy::prelude::*;
-use std::collections::HashMap;
+use std::{
+    collections::HashMap,
+    time::{Duration, Instant},
+};
 
 #[derive(Resource, Debug)]
 pub struct Grid {
@@ -28,5 +31,11 @@ pub struct CellMaterials {
 pub enum PlacementMode {
     Single,
     Block,
-    Random
+    Random,
 }
+
+#[derive(Resource)]
+pub struct Durations(pub Vec<Duration>);
+
+#[derive(Resource)]
+pub struct SystemsMeasureTime(pub Instant);

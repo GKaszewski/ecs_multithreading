@@ -11,7 +11,11 @@ pub struct State(pub bool);
 
 impl std::fmt::Debug for State {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        if self.0 { write!(f, "Alive") } else { write!(f, "Dead") }
+        if self.0 {
+            write!(f, "Alive")
+        } else {
+            write!(f, "Dead")
+        }
     }
 }
 
