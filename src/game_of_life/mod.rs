@@ -1,7 +1,7 @@
 use std::{collections::HashMap, time::Instant};
 
 use bevy::prelude::*;
-use resources::{Durations, SystemsMeasureTime};
+use resources::{Durations, Generations, GlobalTime, SystemsMeasureTime};
 
 use self::resources::{CellPositions, CellsChanged, Grid, PlacementMode};
 
@@ -27,10 +27,12 @@ impl Plugin for GameOfLifePlugin {
             .insert_resource(PlacementMode::Single)
             .insert_resource(Durations(Vec::new()))
             .insert_resource(SystemsMeasureTime(Instant::now()))
+            .insert_resource(GlobalTime(Instant::now()))
+            .insert_resource(Generations(0))
             .add_systems(
                 Startup,
                 (
-                    systems::spawn_cells,
+                    systems::spawn_cells_without_graphic,
                     systems::initialize.before(systems::spawn_cells),
                 ),
             )
@@ -51,11 +53,12 @@ impl Plugin for GameOfLifePlugin {
             .add_systems(
                 Update,
                 (
-                    systems::handle_camera_system,
-                    systems::handle_placement_mode,
-                    systems::handle_cell_click_system,
-                    systems::toggle_simulation_system,
-                    systems::do_one_step_system,
+                    // systems::handle_camera_system,
+                    // systems::handle_placement_mode,
+                    // systems::handle_cell_click_system,
+                    // systems::toggle_simulation_system,
+                    // systems::do_one_step_system,
+                    systems::exit_after_n_generations_system,
                 ),
             );
     }
@@ -66,4 +69,5 @@ pub enum SimulationState {
     #[default]
     Paused,
     Running,
+    Exit,
 }

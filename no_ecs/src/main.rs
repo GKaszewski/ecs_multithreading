@@ -456,7 +456,7 @@ mod game_of_life {
 
 fn main() {
     let start = std::time::Instant::now();
-    game_of_life::run_simulation(600, 400, 10, false);
+    game_of_life::run_simulation(600, 400, 100, false);
     let duration = start.elapsed();
     println!("Time elapsed in running the simulation is: {:?}", duration);
 }

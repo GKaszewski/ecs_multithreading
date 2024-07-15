@@ -8,7 +8,8 @@ use crate::game_of_life::utils::save_durations_to_file;
 
 use super::components::{CellBundle, Neighbors, Position};
 use super::resources::{
-    CellPositions, CellsChanged, Durations, Grid, PlacementMode, SystemsMeasureTime,
+    CellPositions, CellsChanged, Durations, Generations, GlobalTime, Grid, PlacementMode,
+    SystemsMeasureTime,
 };
 use super::SimulationState;
 
@@ -29,6 +30,31 @@ pub fn rebuild_cell_positions(
     }
 
     cells_changed.0 = false;
+}
+
+pub fn spawn_cells_without_graphic(mut commands: Commands, grid: Res<Grid>) {
+    let start = Instant::now();
+    let width = grid.width.clone();
+    let height = grid.height;
+    let cells_to_spawn_count = width * height;
+    let to_spawn = (0..cells_to_spawn_count).map(move |i| {
+        let x = i % width;
+        let y = i / width;
+        let position = Position {
+            x: x as i32,
+            y: y as i32,
+        };
+        let mut rng = rand::thread_rng();
+        let state = components::State(rng.gen_bool(0.5));
+        (position, state, Neighbors(0))
+    });
+
+    commands.spawn_batch(to_spawn);
+    println!("Spawning {:?} cells", cells_to_spawn_count);
+    let duration = start.elapsed();
+    println!("Spawning cells took {:?}", duration);
+
+    commands.insert_resource(NextState(Some(SimulationState::Running)));
 }
 
 pub fn spawn_cells(mut commands: Commands, grid: Res<Grid>, asset_server: Res<AssetServer>) {
@@ -106,8 +132,9 @@ pub fn update_neighbors_brute_force_system(
 }
 
 pub fn update_cells_system(
-    mut query: Query<(&mut components::State, &Neighbors, &mut Sprite)>,
+    mut query: Query<(&mut components::State, &Neighbors, Option<&mut Sprite>)>,
     mut cells_changed: ResMut<CellsChanged>,
+    mut generations: ResMut<Generations>,
 ) {
     for (mut state, neighbors, mut sprite) in query.iter_mut() {
         let previous_state = state.0;
@@ -115,11 +142,15 @@ pub fn update_cells_system(
             (true, 2) | (true, 3) => (),
             (false, 3) => {
                 state.0 = true;
-                sprite.color = Color::GREEN;
+                if let Some(sprite) = sprite.as_mut() {
+                    sprite.color = Color::GREEN;
+                }
             }
             _ => {
                 state.0 = false;
-                sprite.color = Color::BLACK;
+                if let Some(sprite) = sprite.as_mut() {
+                    sprite.color = Color::BLACK;
+                }
             }
         }
 
@@ -127,6 +158,8 @@ pub fn update_cells_system(
             cells_changed.0 = true;
         }
     }
+
+    generations.0 += 1;
 }
 
 pub fn handle_camera_system(
@@ -249,6 +282,7 @@ pub fn do_one_step_system(
 
 pub fn start_measurement(mut commands: Commands) {
     commands.insert_resource(SystemsMeasureTime(Instant::now()));
+    commands.insert_resource(GlobalTime(Instant::now()));
 }
 
 pub fn stop_measurement(
@@ -257,7 +291,31 @@ pub fn stop_measurement(
 ) {
     let duration = systems_measure_time.0.elapsed();
     durations.0.push(duration);
-    println!("System took {:?}", duration);
+    // println!("System took {:?}", duration);
 
-    save_durations_to_file(&durations);
+    //save_durations_to_file(&durations);
+}
+
+pub fn exit_after_n_generations_system(
+    mut commands: Commands,
+    generations: Res<Generations>,
+    simulation_state: Res<State<SimulationState>>,
+    durations: Res<Durations>,
+    global_time: Res<GlobalTime>,
+) {
+    if generations.0 >= 100 {
+        if *simulation_state == SimulationState::Running {
+            println!("Exiting after 100 generations");
+            commands.insert_resource(NextState(Some(SimulationState::Exit)));
+
+            save_durations_to_file(&durations);
+
+            let duration = global_time.0.elapsed();
+            println!("Total time: {:?}", duration);
+
+            std::fs::write("total_time_ecs.txt", format!("{:?}", duration)).unwrap();
+
+            std::process::exit(0);
+        }
+    }
 }

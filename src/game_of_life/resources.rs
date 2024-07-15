@@ -39,3 +39,6 @@ pub struct Durations(pub Vec<Duration>);
 
 #[derive(Resource)]
 pub struct SystemsMeasureTime(pub Instant);
+
+#[derive(Resource)]
+pub struct GlobalTime(pub Instant);
