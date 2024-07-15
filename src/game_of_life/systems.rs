@@ -50,7 +50,7 @@ pub fn spawn_cells_without_graphic(mut commands: Commands, grid: Res<Grid>) {
     });
 
     commands.spawn_batch(to_spawn);
-    println!("Spawning {:?} cells", cells_to_spawn_count);
+    //println!("Spawning {:?} cells", cells_to_spawn_count);
     let duration = start.elapsed();
     println!("Spawning cells took {:?}", duration);
 
@@ -90,9 +90,9 @@ pub fn spawn_cells(mut commands: Commands, grid: Res<Grid>, asset_server: Res<As
     });
 
     commands.spawn_batch(to_spawn);
-    println!("Spawning {:?} cells", cells_to_spawn_count);
+    //println!("Spawning {:?} cells", cells_to_spawn_count);
     let duration = start.elapsed();
-    println!("Spawning cells took {:?}", duration);
+    //println!("Spawning cells took {:?}", duration);
 }
 
 pub fn initialize(mut commands: Commands) {
@@ -106,6 +106,8 @@ pub fn update_neighbors_brute_force_system(
     grid: Res<Grid>,
     cell_positions: Res<CellPositions>,
 ) {
+    let start = Instant::now();
+
     query.par_iter_mut().for_each(|(mut neighbors, pos)| {
         let mut count = 0;
         for dx in -1..=1 {
@@ -129,6 +131,9 @@ pub fn update_neighbors_brute_force_system(
             neighbors.0 = count;
         }
     });
+
+    let duration = start.elapsed();
+    println!("Updating neighbors took {:?}", duration);
 }
 
 pub fn update_cells_system(
@@ -303,9 +308,9 @@ pub fn exit_after_n_generations_system(
     durations: Res<Durations>,
     global_time: Res<GlobalTime>,
 ) {
-    if generations.0 >= 100 {
+    if generations.0 >= 1 {
         if *simulation_state == SimulationState::Running {
-            println!("Exiting after 100 generations");
+            println!("Exiting after 1 generations");
             commands.insert_resource(NextState(Some(SimulationState::Exit)));
 
             save_durations_to_file(&durations);
