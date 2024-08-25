@@ -176,19 +176,19 @@ pub fn handle_camera_system(
     const ZOOM_SPEED: f32 = 0.1;
     for (mut projection, mut transform, _) in query.iter_mut() {
         let mut translation = transform.translation;
-        if keyboard_input.pressed(KeyCode::W) {
+        if keyboard_input.pressed(KeyCode::KeyW) {
             translation.y += SPEED;
         }
-        if keyboard_input.pressed(KeyCode::A) {
+        if keyboard_input.pressed(KeyCode::KeyA) {
             translation.x -= SPEED;
         }
-        if keyboard_input.pressed(KeyCode::S) {
+        if keyboard_input.pressed(KeyCode::KeyS) {
             translation.y -= SPEED;
         }
-        if keyboard_input.pressed(KeyCode::D) {
+        if keyboard_input.pressed(KeyCode::KeyD) {
             translation.x += SPEED;
         }
-        if keyboard_input.pressed(KeyCode::R) {
+        if keyboard_input.pressed(KeyCode::KeyR) {
             projection.scale = 1.0;
         }
 
@@ -209,11 +209,11 @@ pub fn handle_placement_mode(
     mut placement_mode: ResMut<PlacementMode>,
     keyboard_input: Res<Input<KeyCode>>,
 ) {
-    if keyboard_input.just_pressed(KeyCode::Key1) {
+    if keyboard_input.just_pressed(KeyCode::Digit1) {
         *placement_mode = PlacementMode::Single;
-    } else if keyboard_input.just_pressed(KeyCode::Key2) {
+    } else if keyboard_input.just_pressed(KeyCode::Digit2) {
         *placement_mode = PlacementMode::Block;
-    } else if keyboard_input.just_pressed(KeyCode::Key3) {
+    } else if keyboard_input.just_pressed(KeyCode::Digit3) {
         *placement_mode = PlacementMode::Random;
     }
 }
@@ -241,13 +241,21 @@ pub fn handle_cell_click_system(
                     match *placement_mode {
                         PlacementMode::Single => {
                             state.0 = !state.0;
-                            sprite.color = if state.0 { Color::GREEN } else { Color::BLACK };
+                            sprite.color = if state.0 {
+                                Color::srgb(0.0, 1.0, 0.0)
+                            } else {
+                                Color::BLACK
+                            };
                             cells_changed.0 = true;
                         }
                         PlacementMode::Random => {
                             let mut rng = rand::thread_rng();
                             state.0 = rng.gen_bool(0.5);
-                            sprite.color = if state.0 { Color::GREEN } else { Color::BLACK };
+                            sprite.color = if state.0 {
+                                Color::srgb(0.0, 1.0, 0.0)
+                            } else {
+                                Color::BLACK
+                            };
                             cells_changed.0 = true;
                         }
                         _ => {}
@@ -260,14 +268,14 @@ pub fn handle_cell_click_system(
 
 pub fn toggle_simulation_system(
     mut commands: Commands,
-    simulation_state: Res<State<SimulationState>>,
-    keyboard_input: Res<Input<KeyCode>>,
+    simulation_state: ResMut<NextState<SimulationState>>,
+    keyboard_input: Res<ButtonInput<KeyCode>>,
 ) {
     if keyboard_input.just_pressed(KeyCode::Space) {
-        if *simulation_state == SimulationState::Paused {
-            commands.insert_resource(NextState(Some(SimulationState::Running)));
+        if simulation_state == SimulationState::Paused {
+            simulation_state.set(SimulationState::Running);
         } else {
-            commands.insert_resource(NextState(Some(SimulationState::Paused)));
+            simulation_state.set(SimulationState::Paused);
         }
     }
 }
