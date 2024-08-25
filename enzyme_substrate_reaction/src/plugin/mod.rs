@@ -69,30 +69,31 @@ fn setup_system(mut commands: Commands) {
 }
 
 fn huge_scene_setup(mut commands: Commands) {
-    let num_enzymes = 20_000;
-    let num_substrates = 20_000;
+    let num_enzymes = 200_000;
+    let num_substrates = 200_000;
 
     let mut rng = rand::thread_rng();
 
     for _ in 0..num_enzymes {
         commands.spawn((
-            ReactionRate(rng.gen_range(0.1..0.5)),
-            Concentration(rng.gen_range(1.0..5.0)),
+            // ReactionRate(rng.gen_range(0.1..0.5)),
+            ReactionRate(0.5),
+            Concentration(5.0),
             ActiveSite(true),
-            MichaelisConstant(rng.gen_range(0.1..0.5)),
+            MichaelisConstant(0.5),
             Enzyme,
         ));
     }
 
     for _ in 0..num_substrates {
-        commands.spawn((Concentration(rng.gen_range(0.1..0.5)), Substrate));
+        commands.spawn((Concentration(5.0), Substrate));
     }
 
     commands.spawn((Concentration(0.0), Product));
 
     println!(
         "Start: {:?}",
-        std::time::UNIX_EPOCH.elapsed().unwrap().as_secs()
+        std::time::UNIX_EPOCH.elapsed().unwrap().as_millis()
     );
 }
 
@@ -171,10 +172,10 @@ fn check_if_substrates_are_consumed(substrate_query: Query<&Concentration, With<
     }
 
     if substrates_concentration_sum <= 0.0 {
-        println!("All substrates are consumed!");
+        // println!("All substrates are consumed!");
         println!(
             "End: {:?}",
-            std::time::UNIX_EPOCH.elapsed().unwrap().as_secs()
+            std::time::UNIX_EPOCH.elapsed().unwrap().as_millis()
         );
         std::process::exit(0);
     }

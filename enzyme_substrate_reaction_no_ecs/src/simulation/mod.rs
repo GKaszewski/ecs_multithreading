@@ -39,7 +39,9 @@ impl Enzyme {
 
         let rate = self.reaction_rate * substrate.concentration.0
             / (self.michaelis_constant + substrate.concentration.0);
+        // println!("Old substrate concentration: {}", substrate.concentration.0);
         substrate.concentration.0 -= rate;
+        // println!("New substrate concentration: {}", substrate.concentration.0);
         rate
     }
 
@@ -65,7 +67,20 @@ pub fn simulate(
     product: &mut Molecule,
     should_log: bool,
 ) {
-    for _ in 0..iterations {
+    let start = std::time::Instant::now();
+    for iteration in 0..iterations {
+        // println!("Iteration: {}", iteration);
+        let substrates_with_positive_concentration = substrates
+            .iter()
+            .filter(|substrate| substrate.concentration.0 > 0.0)
+            .count();
+        // println!(
+        //     "Substrates with positive concentration: {}",
+        //     substrates_with_positive_concentration
+        // );
+        if substrates_with_positive_concentration == 0 {
+            break;
+        }
         // Binding phase
         for enzyme in enzymes.iter_mut() {
             for substrate in substrates.iter() {
@@ -105,24 +120,20 @@ pub fn simulate(
             }
         }
     }
+
+    let duration = start.elapsed();
+    println!(
+        "Time elapsed in simulation ({} steps) is: {:?}",
+        iterations, duration
+    );
 }
 
 pub fn generate_random_molecules(n: usize) -> Vec<Molecule> {
     let mut rng = rand::thread_rng();
-    (0..n)
-        .map(|_| Molecule::new(rng.gen_range(0.1..0.5)))
-        .collect()
+    (0..n).map(|_| Molecule::new(0.5)).collect()
 }
 
 pub fn generate_random_enzymes(n: usize) -> Vec<Enzyme> {
     let mut rng = rand::thread_rng();
-    (0..n)
-        .map(|_| {
-            Enzyme::new(
-                rng.gen_range(0.1..0.5),
-                rng.gen_range(0.1..0.5),
-                rng.gen_range(0.1..0.5),
-            )
-        })
-        .collect()
+    (0..n).map(|_| Enzyme::new(5.0, 0.5, 0.5)).collect()
 }
