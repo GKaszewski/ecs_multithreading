@@ -133,7 +133,7 @@ pub fn update_neighbors_brute_force_system(
     });
 
     let duration = start.elapsed();
-    println!("Updating neighbors took {:?}", duration);
+    // println!("Updating neighbors took {:?}", duration);
 }
 
 pub fn update_cells_system(
@@ -176,19 +176,19 @@ pub fn handle_camera_system(
     const ZOOM_SPEED: f32 = 0.1;
     for (mut projection, mut transform, _) in query.iter_mut() {
         let mut translation = transform.translation;
-        if keyboard_input.pressed(KeyCode::KeyW) {
+        if keyboard_input.pressed(KeyCode::W) {
             translation.y += SPEED;
         }
-        if keyboard_input.pressed(KeyCode::KeyA) {
+        if keyboard_input.pressed(KeyCode::A) {
             translation.x -= SPEED;
         }
-        if keyboard_input.pressed(KeyCode::KeyS) {
+        if keyboard_input.pressed(KeyCode::S) {
             translation.y -= SPEED;
         }
-        if keyboard_input.pressed(KeyCode::KeyD) {
+        if keyboard_input.pressed(KeyCode::D) {
             translation.x += SPEED;
         }
-        if keyboard_input.pressed(KeyCode::KeyR) {
+        if keyboard_input.pressed(KeyCode::R) {
             projection.scale = 1.0;
         }
 
@@ -209,11 +209,11 @@ pub fn handle_placement_mode(
     mut placement_mode: ResMut<PlacementMode>,
     keyboard_input: Res<Input<KeyCode>>,
 ) {
-    if keyboard_input.just_pressed(KeyCode::Digit1) {
+    if keyboard_input.just_pressed(KeyCode::Key1) {
         *placement_mode = PlacementMode::Single;
-    } else if keyboard_input.just_pressed(KeyCode::Digit2) {
+    } else if keyboard_input.just_pressed(KeyCode::Key2) {
         *placement_mode = PlacementMode::Block;
-    } else if keyboard_input.just_pressed(KeyCode::Digit3) {
+    } else if keyboard_input.just_pressed(KeyCode::Key3) {
         *placement_mode = PlacementMode::Random;
     }
 }
@@ -241,21 +241,13 @@ pub fn handle_cell_click_system(
                     match *placement_mode {
                         PlacementMode::Single => {
                             state.0 = !state.0;
-                            sprite.color = if state.0 {
-                                Color::srgb(0.0, 1.0, 0.0)
-                            } else {
-                                Color::BLACK
-                            };
+                            sprite.color = if state.0 { Color::GREEN } else { Color::BLACK };
                             cells_changed.0 = true;
                         }
                         PlacementMode::Random => {
                             let mut rng = rand::thread_rng();
                             state.0 = rng.gen_bool(0.5);
-                            sprite.color = if state.0 {
-                                Color::srgb(0.0, 1.0, 0.0)
-                            } else {
-                                Color::BLACK
-                            };
+                            sprite.color = if state.0 { Color::GREEN } else { Color::BLACK };
                             cells_changed.0 = true;
                         }
                         _ => {}
@@ -268,14 +260,14 @@ pub fn handle_cell_click_system(
 
 pub fn toggle_simulation_system(
     mut commands: Commands,
-    simulation_state: ResMut<NextState<SimulationState>>,
-    keyboard_input: Res<ButtonInput<KeyCode>>,
+    simulation_state: Res<State<SimulationState>>,
+    keyboard_input: Res<Input<KeyCode>>,
 ) {
     if keyboard_input.just_pressed(KeyCode::Space) {
-        if simulation_state == SimulationState::Paused {
-            simulation_state.set(SimulationState::Running);
+        if *simulation_state == SimulationState::Paused {
+            commands.insert_resource(NextState(Some(SimulationState::Running)));
         } else {
-            simulation_state.set(SimulationState::Paused);
+            commands.insert_resource(NextState(Some(SimulationState::Paused)));
         }
     }
 }
@@ -316,9 +308,9 @@ pub fn exit_after_n_generations_system(
     durations: Res<Durations>,
     global_time: Res<GlobalTime>,
 ) {
-    if generations.0 >= 1 {
+    if generations.0 >= 100 {
         if *simulation_state == SimulationState::Running {
-            println!("Exiting after 1 generations");
+            println!("Exiting after 100 generations");
             commands.insert_resource(NextState(Some(SimulationState::Exit)));
 
             save_durations_to_file(&durations);

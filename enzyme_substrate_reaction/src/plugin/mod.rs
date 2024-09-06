@@ -123,35 +123,71 @@ fn reaction_system(
     mut product_query: Query<(Entity, &mut Concentration), With<Product>>,
     log_flag: Res<SimulationLogFlag>,
 ) {
-    for (active_site, reaction_rate, km) in enzyme_query.iter() {
-        if !active_site.0 {
-            continue; // Only proceed if the active site is occupied
-        }
+    enzyme_query
+        .par_iter()
+        .for_each(|(active_site, reaction_rate, km)| {
+            if !active_site.0 {
+                return; // Only proceed if the active site is occupied
+            }
 
-        for (substrate_entity, mut substrate_concentration) in substrate_query.iter_mut() {
-            if substrate_concentration.0 > 0.0 {
-                let rate = reaction_rate.0 * substrate_concentration.0
-                    / (km.0 + substrate_concentration.0); // Michaelis-Menten kinetics equation v = Vmax * [S] / (Km + [S])
-                substrate_concentration.0 -= rate; // Consume the substrate
-                if log_flag.0 {
-                    println!(
-                        "Substrate {} concentration: {}",
-                        substrate_entity, substrate_concentration.0
-                    );
-                }
+            substrate_query.par_iter_mut().for_each(
+                |(substrate_entity, mut substrate_concentration)| {
+                    if substrate_concentration.0 > 0.0 {
+                        let rate = reaction_rate.0 * substrate_concentration.0
+                            / (km.0 + substrate_concentration.0); // Michaelis-Menten kinetics equation v = Vmax * [S] / (Km + [S])
+                        substrate_concentration.0 -= rate; // Consume the substrate
+                        if log_flag.0 {
+                            println!(
+                                "Substrate {} concentration: {}",
+                                substrate_entity, substrate_concentration.0
+                            );
+                        }
 
-                for (product_entity, mut product_concentration) in product_query.iter_mut() {
-                    product_concentration.0 += rate; // Produce the product
-                    if log_flag.0 {
-                        println!(
-                            "Product {} concentration: {}",
-                            product_entity, product_concentration.0
+                        product_query.par_iter_mut().for_each(
+                            |(product_entity, mut product_concentration)| {
+                                product_concentration.0 += rate; // Produce the product
+                                if log_flag.0 {
+                                    println!(
+                                        "Product {} concentration: {}",
+                                        product_entity, product_concentration.0
+                                    );
+                                }
+                            },
                         );
                     }
-                }
-            }
-        }
-    }
+                },
+            );
+        });
+
+    // for (active_site, reaction_rate, km) in enzyme_query.iter() {
+    //     if !active_site.0 {
+    //         continue; // Only proceed if the active site is occupied
+    //     }
+
+    //     for (substrate_entity, mut substrate_concentration) in substrate_query.iter_mut() {
+    //         if substrate_concentration.0 > 0.0 {
+    //             let rate = reaction_rate.0 * substrate_concentration.0
+    //                 / (km.0 + substrate_concentration.0); // Michaelis-Menten kinetics equation v = Vmax * [S] / (Km + [S])
+    //             substrate_concentration.0 -= rate; // Consume the substrate
+    //             if log_flag.0 {
+    //                 println!(
+    //                     "Substrate {} concentration: {}",
+    //                     substrate_entity, substrate_concentration.0
+    //                 );
+    //             }
+
+    //             for (product_entity, mut product_concentration) in product_query.iter_mut() {
+    //                 product_concentration.0 += rate; // Produce the product
+    //                 if log_flag.0 {
+    //                     println!(
+    //                         "Product {} concentration: {}",
+    //                         product_entity, product_concentration.0
+    //                     );
+    //                 }
+    //             }
+    //         }
+    //     }
+    // }
 }
 
 fn release_system(mut enzyme_query: Query<&mut ActiveSite>, log_flag: Res<SimulationLogFlag>) {
@@ -166,13 +202,12 @@ fn release_system(mut enzyme_query: Query<&mut ActiveSite>, log_flag: Res<Simula
 }
 
 fn check_if_substrates_are_consumed(substrate_query: Query<&Concentration, With<Substrate>>) {
-    let mut substrates_concentration_sum = 0.0;
-    for substrate_concentration in substrate_query.iter() {
-        substrates_concentration_sum += substrate_concentration.0;
-    }
+    let positive_substrates_concentration_count = substrate_query
+        .iter()
+        .filter(|substrate_concentration| substrate_concentration.0 > 0.0)
+        .count();
 
-    if substrates_concentration_sum <= 0.0 {
-        // println!("All substrates are consumed!");
+    if positive_substrates_concentration_count <= 0 {
         println!(
             "End: {:?}",
             std::time::UNIX_EPOCH.elapsed().unwrap().as_millis()

@@ -14,8 +14,8 @@ pub struct GameOfLifePlugin;
 
 impl Plugin for GameOfLifePlugin {
     fn build(&self, app: &mut App) {
-        app.init_state::<SimulationState>()
-            .insert_resource(ClearColor(Color::srgb(0.0, 0.0, 0.0)))
+        app.add_state::<SimulationState>()
+            .insert_resource(ClearColor(Color::rgb(0.0, 0.0, 0.0)))
             .insert_resource(Grid {
                 width: 600,
                 height: 400,

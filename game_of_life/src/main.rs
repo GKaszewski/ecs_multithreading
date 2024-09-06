@@ -16,15 +16,16 @@ fn main() {
         //             task_pool_options: TaskPoolOptions::with_num_threads(12),
         //         }),
         // )
-        .add_plugins(DefaultPlugins.set(WindowPlugin {
-            primary_window: Some(Window {
-                title: "Gas Sim".to_string(),
-                present_mode: bevy::window::PresentMode::Immediate,
-                ..default()
-            }),
-            ..default()
-        }))
-        //.add_plugins((game_of_life::GameOfLifePlugin,))
-        .add_plugins(gas_sim::GasSimPlugin)
+        .add_plugins(MinimalPlugins)
+        // .add_plugins(DefaultPlugins.set(WindowPlugin {
+        //     primary_window: Some(Window {
+        //         title: "Gas Sim".to_string(),
+        //         present_mode: bevy::window::PresentMode::Immediate,
+        //         ..default()
+        //     }),
+        //     ..default()
+        // }))
+        .add_plugins((game_of_life::GameOfLifePlugin,))
+        // .add_plugins(gas_sim::GasSimPlugin)
         .run();
 }

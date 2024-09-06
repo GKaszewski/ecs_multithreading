@@ -18,15 +18,15 @@ mod game_of_life {
     }
 
     fn initialize_cells(width: u32, height: u32) -> Vec<Cell> {
-        let start = std::time::Instant::now();
+        // let start = std::time::Instant::now();
         let size = (width * height) as usize;
         let mut cells = Vec::with_capacity(size);
         for _ in 0..size {
             cells.push(Cell::Dead);
         }
 
-        let duration = start.elapsed();
-        println!("Time elapsed in initializing the cells is: {:?}", duration);
+        // let duration = start.elapsed();
+        // println!("Time elapsed in initializing the cells is: {:?}", duration);
 
         cells
     }
@@ -56,7 +56,7 @@ mod game_of_life {
         x: u32,
         y: u32,
     ) -> u32 {
-        let start = std::time::Instant::now();
+        // let start = std::time::Instant::now();
         let mut count = 0;
         for i in -1..2 {
             for j in -1..2 {
@@ -74,11 +74,11 @@ mod game_of_life {
             }
         }
 
-        let duration = start.elapsed();
-        println!(
-            "Time elapsed in getting the alive neighbours count is: {:?}",
-            duration
-        );
+        // let duration = start.elapsed();
+        // println!(
+        //     "Time elapsed in getting the alive neighbours count is: {:?}",
+        //     duration
+        // );
 
         count
     }
@@ -169,7 +169,7 @@ mod game_of_life {
             //println!("Time elapsed in running the iteration is: {:?}", duration);
         }
 
-        save_durations_to_file(&universe.durations, "durations.txt");
+        //save_durations_to_file(&universe.durations, "durations.txt");
     }
 
     mod tests {
@@ -468,8 +468,23 @@ mod game_of_life {
 }
 
 fn main() {
+    let args: Vec<String> = std::env::args().collect();
+    if args.len() < 4 {
+        println!("Usage: {} <width> <height> <iterations>", args[0]);
+        std::process::exit(1);
+    }
+
+    let width: u32 = args[1].parse().expect("Invalid width");
+    let height: u32 = args[2].parse().expect("Invalid height");
+    let iterations: u32 = args[3].parse().expect("Invalid iterations");
+
     let start = std::time::Instant::now();
-    game_of_life::run_simulation(600, 400, 1, false);
+    game_of_life::run_simulation(width, height, iterations, false);
     let duration = start.elapsed();
-    println!("Time elapsed in running the simulation is: {:?}", duration);
+    println!(
+        "Time elapsed in running the simulation ({} iterations, {} cells) is: {:?}",
+        iterations,
+        width * height,
+        duration
+    );
 }
